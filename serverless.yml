@@ -1,0 +1,101 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: proyecto-agenda
+# app and org for use with dashboard.serverless.com
+app: agenda-app
+org: pedrodonte
+
+plugins:
+  - serverless-python-requirements
+package:
+  exclude:
+    - node_modules/**
+    - .idea/**
+    - .requirements/**
+    - env/**
+    - README.md
+    - package.json
+    - package-lock.json
+    - requirements.txt
+
+provider:
+  name: aws
+  stage: dev
+  region: us-west-2
+  runtime: python3.6
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    DYNAMODB_MENSAJE: MENSAJE-${opt:stage, self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:DescribeTable
+      #Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_MENSAJE}"
+
+#cfnRole: arn:aws:iam::222162321971:role/api-control-acceso-dev
+
+
+functions:
+  list:
+    handler: code/list.todo_list
+    events:
+      - http:
+          path: agenda
+          method: get
+          cors: true
+  create:
+    handler: code/create.create
+    events:
+      - http:
+          path: agenda
+          method: post
+          cors: true
+  msg_get:
+    handler: code/mensaje_crud.msg_get
+    events:
+      - http:
+          path: mensaje/{mensaje_id}
+          method: get
+          cors: true
+          integration: lambda
+          request:
+            paths:
+              mensaje_id: true
+  msg_list:
+    handler: code/mensaje_crud.msg_list
+    events:
+      - http:
+          path: mensaje
+          method: get
+          cors: true
+  msg_create:
+    handler: code/mensaje_crud.msg_crear
+    events:
+      - http:
+          path: mensaje
+          method: post
+          cors: true
+
+
+          
+resources:
+  # DynamoDB
+  - ${file(resources/dynamodb-table.yml)}
